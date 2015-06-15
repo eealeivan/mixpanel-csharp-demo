@@ -12,7 +12,27 @@ mdDirectivesModule.directive("mdProperties", function () {
                 text: "Text",
                 number: "Number",
                 date: "Date",
-                bool: "Bool"
+                bool: "Bool",
+                //textArray: "Text Array",
+                //numberArray: "Number Array",
+                //dateArray: "Date Array",
+                //boolArray: "Bool Array",
+            };
+            $scope.types["text-array"] = "Text Array";
+            $scope.types["number-array"] = "Number Array";
+            $scope.types["date-array"] = "Date Array";
+            $scope.types["bool-array"] = "Bool Array";
+
+            $scope.propertyTypeChanged = function (property) {
+                var isArray =
+                    property.type === "text-array" || property.type === "number-array" ||
+                    property.type === "date-array" || property.type === "bool-array";
+
+                if (isArray) {
+                    property.value = [null, null, null];
+                } else {
+                    property.value = null;
+                }
             };
 
             $scope.add = function () {

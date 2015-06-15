@@ -39,7 +39,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
 
     var messageActionGrid = {};
     var buildModel = function(properties, additinalData) {
-        var model =  {
+        var model = {
             token: $scope.model.token,
             distinctId: $scope.model.distinctId,
             properties: properties,

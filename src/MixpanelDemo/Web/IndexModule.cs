@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Mixpanel;
@@ -145,22 +146,66 @@ namespace Web
 
             private object ParsePropertyValue(Property property)
             {
+                var value = property.Value;
                 switch (property.Type)
                 {
-                    case "date":
-                        DateTime date;
-                        if (DateTime.TryParse(property.Value as string, out date))
-                        {
-                            return date;
-                        }
-                        return property.Value;
                     case "text":
+                        return ParseText(value);
                     case "number":
+                        return ParseNumber(value);
+                    case "date":
+                        return ParseDateTime(value);
                     case "bool":
-                        return property.Value;
+                        return ParseBool(value);
+                    case "text-array":
+                        return ParseArray(value, ParseText); 
+                    case "number-array":
+                        return ParseArray(value, ParseNumber);
+                    case "date-array":
+                        return ParseArray(value, ParseDateTime);
+                    case "bool-array":
+                        return ParseArray(value, ParseBool);
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+            }
+
+            private static object ParseText(object value)
+            {
+                return (value is string) ? value : null;
+            }
+
+            private static object ParseNumber(object value)
+            {
+                return (value is int || value is decimal) ? value : null;
+            }
+
+            private static object ParseDateTime(object value)
+            {
+                DateTime date;
+                if (value != null && DateTime.TryParse(value as string, out date))
+                {
+                    return date;
+                }
+                return null;
+            }
+
+            private static object ParseBool(object value)
+            {
+                return (value is bool) ? value : null;
+            }
+
+            private object ParseArray(object value, Func<object, object> parseArrayItemFn)
+            {
+                if (value is IEnumerable)
+                {
+                    return ((IEnumerable) (value))
+                        .Cast<object>()
+                        .Where(x => x != null)
+                        .Select(parseArrayItemFn)
+                        .ToList();
+                }
+                return null;
             }
         }
     }

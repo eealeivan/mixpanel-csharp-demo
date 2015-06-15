@@ -48,7 +48,8 @@
     <Reference Include="Microsoft.Owin.Host.SystemWeb">
       <HintPath>..\packages\Microsoft.Owin.Host.SystemWeb.3.0.1\lib\net45\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
     </Reference>
-    <Reference Include="Mixpanel">
+    <Reference Include="Mixpanel, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\mixpanel-csharp.1.0.0\lib\Mixpanel.dll</HintPath>
     </Reference>
     <Reference Include="Nancy">

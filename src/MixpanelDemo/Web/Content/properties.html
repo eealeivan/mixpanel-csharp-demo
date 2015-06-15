@@ -13,6 +13,7 @@
             <td style="min-width: 120px;">
                 <select ng-model="property.type"
                         ng-options="key as value for (key, value) in types"
+                        ng-change="propertyTypeChanged(property)"
                         class="form-control input-sm"></select>
             </td>
             <td>
@@ -20,14 +21,31 @@
                        ng-model="property.value" class="form-control input-sm" />
                 <input type="number" ng-if="property.type === 'number'"
                        ng-model="property.value" class="form-control input-sm" />
-                <!--<input type="datetime" ng-if="property.type === 'date'"
-                           ng-model="property.value" class="form-control" />-->
                 <input type="text" ng-if="property.type === 'date'"
                        ng-click="datepopupOpen = true"
                        datepicker-popup ng-model="property.value" is-open="datepopupOpen"
                        show-button-bar="false" class="form-control input-sm" />
                 <input type="checkbox" ng-if="property.type === 'bool'"
-                       ng-model="property.value" class="form-control input-sm">
+                       ng-model="property.value" class="input-sm">
+                <div ng-if="property.type === 'text-array'"
+                     ng-repeat="arrayItem in property.value track by $index">
+                    <input type="text" ng-model="property.value[$index]" class="form-control input-sm" />
+                </div>
+                <div ng-if="property.type === 'number-array'"
+                     ng-repeat="arrayItem in property.value track by $index">
+                    <input type="number" ng-model="property.value[$index]" class="form-control input-sm" />
+                </div>
+                <div ng-if="property.type === 'date-array'"
+                     ng-repeat="arrayItem in property.value track by $index">
+                    <input type="text"
+                           ng-click="datepopupOpen = true"
+                           datepicker-popup ng-model="property.value[$index]" is-open="datepopupOpen"
+                           show-button-bar="false" class="form-control input-sm" />
+                </div>
+                <div ng-if="property.type === 'bool-array'"
+                     ng-repeat="arrayItem in property.value track by $index">
+                    <input type="checkbox" ng-model="property.value[$index]" class="input-sm">
+                </div>
             </td>
             <td>
                 <button ng-click="delete($index)" class="btn btn-danger btn-sm">
