@@ -1,10 +1,15 @@
 ﻿var indexApp = angular.module("indexApp", ["ui.bootstrap", "hljs", "md-services", "md-directives"]);
 
 indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", function ($scope, $http, localStorageService) {
+    $scope.model = {};
+    $scope.config = {};
     $scope.messageTypes = [
         "track", "alias", "people-set", "people-set-once", "people-add", "people-append",
         "people-union"];
     $scope.activeMessageType = $scope.messageTypes[0];
+    $scope.changeActiveMessageType = function (messageType) {
+        $scope.activeMessageType = messageType;
+    };
 
     $scope.send = function () {
         var actionData = messageActionGrid[$scope.activeMessageType];
@@ -30,20 +35,17 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
         return $scope.result && $scope.result.error;
     };
 
-    $scope.tokenChanged = function () {
-        localStorageService.set("token", $scope.model.token);
-    };
-
-    $scope.model = {};
-    $scope.model.token = localStorageService.get("token");
-
     var messageActionGrid = {};
-    var buildModel = function(properties, additinalData) {
+    var buildModel = function (properties, additinalData) {
         var model = {
             token: $scope.model.token,
             distinctId: $scope.model.distinctId,
             properties: properties,
-            superProperties: $scope.model.superProperties
+            superProperties: $scope.model.superProperties,
+            config: {
+                useJsonNet: $scope.config.useJsonNet,
+                useHttpClient: $scope.config.useHttpClient
+            }
         };
 
         if (additinalData) {
@@ -95,5 +97,26 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
             return buildModel($scope.model.peopleUnion.properties);
         }
     };
+
+    $scope.autosaveManager = {
+        performAutosave: function () {
+            localStorageService.set("autosavedValues", {
+                token: $scope.model.token || null,
+                distinctId: $scope.model.distinctId || null,
+                useJsonNet: $scope.config.useJsonNet || false,
+                useHttpClient: $scope.config.useHttpClient || false
+            });
+        },
+        loadAutosavedValues: function () {
+            var autosavedValues = localStorageService.get("autosavedValues", "object");
+            if (autosavedValues) {
+                $scope.model.token = autosavedValues.token;
+                $scope.model.distinctId = autosavedValues.distinctId;
+                $scope.config.useJsonNet = autosavedValues.useJsonNet;
+                $scope.config.useHttpClient = autosavedValues.useHttpClient;
+            }
+        }
+    };
+    $scope.autosaveManager.loadAutosavedValues();
 }
 ]);

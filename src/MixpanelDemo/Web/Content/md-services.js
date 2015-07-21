@@ -7,13 +7,21 @@ mdServicesModule.factory('localStorageService', function () {
 
     var set = function (key, value) {
         if (isStorageSupported) {
+            if (window.angular.isObject(value)) {
+                value = JSON.stringify(value);
+            }
+
             localStorage.setItem(key, value);
         }
     };
 
-    var get = function (key) {
+    var get = function (key, objectType) {
         if (isStorageSupported) {
-            return localStorage.getItem(key);
+            var value = localStorage.getItem(key);
+            if (objectType && objectType === "object") {
+                return JSON.parse(value);
+            }
+            return value;
         } else {
             return undefined;
         }

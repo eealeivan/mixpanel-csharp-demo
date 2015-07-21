@@ -2,9 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Mixpanel;
 using Nancy;
 using Nancy.ModelBinding;
+using Newtonsoft.Json;
 using Web.Models;
 
 namespace Web
@@ -14,7 +17,7 @@ namespace Web
         public IndexModule()
         {
             Get["/"] = _ => View["index.html"];
-            Post["/track"] = _ => HandleTrack(this.Bind<Track>());
+            Post["/track"] = _ => HandleTrackAsync(this.Bind<Track>());
             Post["/alias"] = _ => HandleAlias(this.Bind<Alias>());
             Post["/people-set"] = _ => HandlePeopleSet(this.Bind<ModelBase>());
             Post["/people-set-once"] = _ => HandlePeopleSetOnce(this.Bind<ModelBase>());
@@ -26,8 +29,12 @@ namespace Web
             Post["/people-track-charge"] = _ => HandlePeopleTrackCharge(this.Bind<PeopleTrackCharge>());
         }
 
-        private MessageResult HandleTrack(Track model)
+        private /*async Task<MessageResult>*/ MessageResult HandleTrackAsync(Track model)
         {
+            //return await new MessageHandler(model).HandleAsync(
+            //    (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
+            //    (client, properties) => client.Track(model.Event, model.DistinctId, properties),
+            //    (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties)); 
             return new MessageHandler(model).Handle(
                 (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
                 (client, properties) => client.Track(model.Event, model.DistinctId, properties));
@@ -124,7 +131,7 @@ namespace Web
                     };
                 }
 
-                var mixpanelResponse = sendFn(Client, Properties);
+                bool mixpanelResponse = sendFn(Client, Properties);
                 return new MessageResult
                 {
                     SentJson = testResult.Json,
@@ -132,10 +139,77 @@ namespace Web
                 };
             }
 
+            public async Task<MessageResult> HandleAsync(
+                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
+                Func<IMixpanelClient, IDictionary<string, object>, bool> sendFn,
+                Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
+                )
+            {
+                var testResult = testFn(Client, Properties);
+                if (testResult.Exception != null)
+                {
+                    return await Task.FromResult(
+                        new MessageResult
+                        {
+                            Error = testResult.Exception.Message
+                        });
+                }
+
+                bool mixpanelResponse = await sendAsyncFn(Client, Properties);
+                return new MessageResult
+                {
+                    SentJson = testResult.Json,
+                    MixpanelResponse = mixpanelResponse
+                };
+            } 
+
             private IMixpanelClient GetMixpanelClient(ModelBase model)
             {
+                var config = new MixpanelConfig();
+                if (model.Config.UseJsonNet)
+                {
+                    config.SerializeJsonFn = JsonConvert.SerializeObject;
+                }
+
+                if (model.Config.UseHttpClient)
+                {
+                    config.HttpPostFn = (url, stringContent) =>
+                    {
+                        using (var client = new HttpClient())
+                        {
+                            HttpResponseMessage responseMessage = 
+                                client.PostAsync(url, new StringContent(stringContent)).Result;
+                            if (!responseMessage.IsSuccessStatusCode)
+                            {
+                                return false;
+                            }
+
+                            string responseContent = responseMessage.Content.ReadAsStringAsync().Result;
+                            return responseContent == "1";
+                        }
+                    };
+
+                    //TODO: Not working correctly
+                    config.AsyncHttpPostFn = async (url, stringContent) =>
+                    {
+                        using (var client = new HttpClient())
+                        {
+                            HttpResponseMessage responseMessage =
+                                await client.PostAsync(url, new StringContent(stringContent));
+                            if (!responseMessage.IsSuccessStatusCode)
+                            {
+                                return false;
+                            }
+
+                            string responseContent = await responseMessage.Content.ReadAsStringAsync();
+                            return responseContent == "1";
+                        }
+                    };
+                }
+
                 var superProperties = GetPropertiesDictionary(model.SuperProperties);
-                return new MixpanelClient(model.Token, superProperties: superProperties);
+
+                return new MixpanelClient(model.Token, config, superProperties);
             }
 
             private IDictionary<string, object> GetPropertiesDictionary(IEnumerable<Property> properties)
