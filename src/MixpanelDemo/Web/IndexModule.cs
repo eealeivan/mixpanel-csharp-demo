@@ -17,72 +17,68 @@ namespace Web
         public IndexModule()
         {
             Get["/"] = _ => View["index.html"];
-            Post["/track"] = _ => HandleTrackAsync(this.Bind<Track>());
-            Post["/alias"] = _ => HandleAlias(this.Bind<Alias>());
-            Post["/people-set"] = _ => HandlePeopleSet(this.Bind<ModelBase>());
-            Post["/people-set-once"] = _ => HandlePeopleSetOnce(this.Bind<ModelBase>());
-            Post["/people-add"] = _ => HandlePeopleAdd(this.Bind<ModelBase>());
-            Post["/people-append"] = _ => HandlePeopleAppend(this.Bind<ModelBase>());
-            Post["/people-union"] = _ => HandlePeopleUnion(this.Bind<ModelBase>());
-            Post["/people-unset"] = _ => HandlePeopleUnset(this.Bind<PeopleUnset>());
-            Post["/people-delete"] = _ => HandlePeopleDelete(this.Bind<ModelBase>());
-            Post["/people-track-charge"] = _ => HandlePeopleTrackCharge(this.Bind<PeopleTrackCharge>());
+            Post["/track", true] = async (m, ct) => await HandleTrackAsync(this.Bind<Track>());
+            Post["/alias", true] = async (m, ct) => await HandleAliasAsync(this.Bind<Alias>());
+            Post["/people-set", true] = async (m, ct) => await HandlePeopleSetAsync(this.Bind<ModelBase>());
+            Post["/people-set-once", true] = async (m, ct) => await HandlePeopleSetOnceAsync(this.Bind<ModelBase>());
+            Post["/people-add", true] = async (m, ct) => await HandlePeopleAddAsync(this.Bind<ModelBase>());
+            Post["/people-append", true] = async (m, ct) => await HandlePeopleAppendAsync(this.Bind<ModelBase>());
+            Post["/people-union", true] = async (m, ct) => await HandlePeopleUnionAsync(this.Bind<ModelBase>());
+            Post["/people-unset", true] = async (m, ct) => await HandlePeopleUnsetAsync(this.Bind<PeopleUnset>());
+            Post["/people-delete", true] = async (m, ct) => await HandlePeopleDeleteAsync(this.Bind<ModelBase>());
+            Post["/people-track-charge", true] = async (m, ct) => await HandlePeopleTrackChargeAsync(this.Bind<PeopleTrackCharge>());
         }
 
-        private /*async Task<MessageResult>*/ MessageResult HandleTrackAsync(Track model)
+        private async Task<MessageResult> HandleTrackAsync(Track model)
         {
-            //return await new MessageHandler(model).HandleAsync(
-            //    (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
-            //    (client, properties) => client.Track(model.Event, model.DistinctId, properties),
-            //    (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties)); 
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                 (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
-                (client, properties) => client.Track(model.Event, model.DistinctId, properties));
+                (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties)); 
         } 
         
-        private MessageResult HandleAlias(Alias model)
+        private async Task<MessageResult> HandleAliasAsync(Alias model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                 (client, properties) => client.AliasTest(model.DistinctId, model.FromDistinctId),
-                (client, properties) => client.Alias(model.DistinctId, model.FromDistinctId));
+                (client, properties) => client.AliasAsync(model.DistinctId, model.FromDistinctId));
         }
 
-        private MessageResult HandlePeopleSet(ModelBase model)
+        private async Task<MessageResult> HandlePeopleSetAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                 (client, properties) => client.PeopleSetTest(model.DistinctId, properties),
-                (client, properties) => client.PeopleSet(model.DistinctId, properties));
+                (client, properties) => client.PeopleSetAsync(model.DistinctId, properties));
         }
 
-        private MessageResult HandlePeopleSetOnce(ModelBase model)
+        private async Task<MessageResult> HandlePeopleSetOnceAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                 (client, properties) => client.PeopleSetOnceTest(model.DistinctId, properties),
-                (client, properties) => client.PeopleSetOnce(model.DistinctId, properties));
+                (client, properties) => client.PeopleSetOnceAsync(model.DistinctId, properties));
         }
 
-        private MessageResult HandlePeopleAdd(ModelBase model)
+        private async Task<MessageResult> HandlePeopleAddAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => client.PeopleAddTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleAdd(model.DistinctId, properties));
+               (client, properties) => client.PeopleAddAsync(model.DistinctId, properties));
         }
 
-        private MessageResult HandlePeopleAppend(ModelBase model)
+        private async Task<MessageResult> HandlePeopleAppendAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => client.PeopleAppendTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleAppend(model.DistinctId, properties));
+               (client, properties) => client.PeopleAppendAsync(model.DistinctId, properties));
         }
 
-        private MessageResult HandlePeopleUnion(ModelBase model)
+        private async Task<MessageResult> HandlePeopleUnionAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => client.PeopleUnionTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleUnion(model.DistinctId, properties));
+               (client, properties) => client.PeopleUnionAsync(model.DistinctId, properties));
         }
 
-        private MessageResult HandlePeopleUnset(PeopleUnset model)
+        private async Task<MessageResult> HandlePeopleUnsetAsync(PeopleUnset model)
         {
             var propertyNamesObj = ValueParser.ParseArray(model.PropertyNames, ValueParser.ParseText);
             IList<string> propertyNames;
@@ -97,64 +93,40 @@ namespace Web
                     .ToList();
             }
 
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => client.PeopleUnsetTest(model.DistinctId, propertyNames),
-               (client, properties) => client.PeopleUnset(model.DistinctId, propertyNames));
+               (client, properties) => client.PeopleUnsetAsync(model.DistinctId, propertyNames));
         }
 
-        private MessageResult HandlePeopleDelete(ModelBase model)
+        private async Task<MessageResult> HandlePeopleDeleteAsync(ModelBase model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => client.PeopleDeleteTest(model.DistinctId),
-               (client, properties) => client.PeopleDelete(model.DistinctId));
+               (client, properties) => client.PeopleDeleteAsync(model.DistinctId));
         }  
         
-        private MessageResult HandlePeopleTrackCharge(PeopleTrackCharge model)
+        private async Task<MessageResult> HandlePeopleTrackChargeAsync(PeopleTrackCharge model)
         {
-            return new MessageHandler(model).Handle(
+            return await new MessageHandler(model).HandleAsync(
                (client, properties) => 
                    client.PeopleTrackChargeTest(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
                (client, properties) =>
-                   client.PeopleTrackCharge(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow));
+                   client.PeopleTrackChargeAsync(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow));
         }
 
         private class MessageHandler
         {
-            public IMixpanelClient Client { get; set; }
-            public ModelBase Model { get; set; }
-            public IDictionary<string, object> Properties { get; set; }
+            private IMixpanelClient Client { get; set; }
+            private IDictionary<string, object> Properties { get; set; }
 
             public MessageHandler(ModelBase model)
             {
                 Client = GetMixpanelClient(model);
-                Model = model;
                 Properties = GetPropertiesDictionary(model.Properties);
-            }
-
-            public MessageResult Handle(
-                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
-                Func<IMixpanelClient, IDictionary<string, object>, bool> sendFn)
-            {
-                var testResult = testFn(Client, Properties);
-                if (testResult.Exception != null)
-                {
-                    return new MessageResult
-                    {
-                        Error = testResult.Exception.Message
-                    };
-                }
-
-                bool mixpanelResponse = sendFn(Client, Properties);
-                return new MessageResult
-                {
-                    SentJson = testResult.Json,
-                    MixpanelResponse = mixpanelResponse
-                };
             }
 
             public async Task<MessageResult> HandleAsync(
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
-                Func<IMixpanelClient, IDictionary<string, object>, bool> sendFn,
                 Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
                 )
             {
@@ -190,7 +162,7 @@ namespace Web
                     {
                         using (var client = new HttpClient())
                         {
-                            HttpResponseMessage responseMessage = 
+                            HttpResponseMessage responseMessage =
                                 client.PostAsync(url, new StringContent(stringContent)).Result;
                             if (!responseMessage.IsSuccessStatusCode)
                             {
@@ -202,7 +174,6 @@ namespace Web
                         }
                     };
 
-                    //TODO: Not working correctly
                     config.AsyncHttpPostFn = async (url, stringContent) =>
                     {
                         using (var client = new HttpClient())
