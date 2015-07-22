@@ -116,7 +116,7 @@
 
                     <!--PeopleAdd-->
                     <div ng-show="activeMessageType == 'people-add'">
-                        <md-properties ng-model="model.peopleAdd.properties"></md-properties>
+                        <md-properties ng-model="model.peopleAdd.properties" allowed-types="number"></md-properties>
                     </div>
 
                     <!--PeopleAppend-->
@@ -126,7 +126,22 @@
 
                     <!--PeopleUnion-->
                     <div ng-show="activeMessageType == 'people-union'">
-                        <md-properties ng-model="model.peopleUnion.properties"></md-properties>
+                        <md-properties ng-model="model.peopleUnion.properties"
+                                       allowed-types="text-array,number-array,date-array,bool-array"></md-properties>
+                    </div>
+                    
+                    <!--PeopleUnset-->
+                    <div ng-show="activeMessageType == 'people-unset'">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">Property Names</label>
+                                <div class="col-sm-9">
+                                    <div ng-repeat="propertyName in model.peopleUnset.propertyNames track by $index">
+                                        <input type="text" ng-model="model.peopleUnset.propertyNames[$index]" class="form-control input-sm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <h3>Super Properties</h3>

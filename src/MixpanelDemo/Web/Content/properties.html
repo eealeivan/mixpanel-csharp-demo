@@ -12,7 +12,7 @@
             </td>
             <td style="min-width: 120px;">
                 <select ng-model="property.type"
-                        ng-options="key as value for (key, value) in types"
+                        ng-options="type.code as type.text for type in types"
                         ng-change="propertyTypeChanged(property)"
                         class="form-control input-sm"></select>
             </td>
@@ -55,7 +55,7 @@
         </tr>
         <tr>
             <td colspan="4">
-                <button ng-click="add()" class="btn btn-info btn-sm">
+                <button ng-click="add()" ng-disabled="types.length <= 0" class="btn btn-info btn-sm">
                     <span class="glyphicon glyphicon-plus"></span> Add new property
                 </button>
             </td>

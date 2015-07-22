@@ -1,11 +1,14 @@
 ﻿var indexApp = angular.module("indexApp", ["ui.bootstrap", "hljs", "md-services", "md-directives"]);
 
 indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", function ($scope, $http, localStorageService) {
+    // Set init model values
     $scope.model = {};
+    $scope.model.peopleUnset = { propertyNames: [null, null, null] };
     $scope.config = {};
+
     $scope.messageTypes = [
         "track", "alias", "people-set", "people-set-once", "people-add", "people-append",
-        "people-union"];
+        "people-union", "people-unset"];
     $scope.activeMessageType = $scope.messageTypes[0];
     $scope.changeActiveMessageType = function (messageType) {
         $scope.activeMessageType = messageType;
@@ -32,7 +35,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
     };
 
     $scope.isResultError = function () {
-        return $scope.result && $scope.result.error;
+        return !$scope.isResultSuccess;
     };
 
     var messageActionGrid = {};
@@ -95,6 +98,13 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
         url: "/people-union",
         getModelFn: function () {
             return buildModel($scope.model.peopleUnion.properties);
+        }
+    };
+
+    messageActionGrid["people-unset"] = {
+        url: "/people-unset",
+        getModelFn: function () {
+            return buildModel(null, $scope.model.peopleUnset);
         }
     };
 

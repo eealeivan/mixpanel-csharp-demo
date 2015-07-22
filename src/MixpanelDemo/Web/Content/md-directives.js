@@ -5,46 +5,67 @@ mdDirectivesModule.directive("mdProperties", function () {
         restrict: 'E',
         replace: true,
         scope: {
-            properties: "=ngModel"
+            properties: "=ngModel",
+            allowedTypes: "@"
         },
         controller: ["$scope", function ($scope) {
-            $scope.types = {
-                text: "Text",
-                number: "Number",
-                date: "Date",
-                bool: "Bool",
-                //textArray: "Text Array",
-                //numberArray: "Number Array",
-                //dateArray: "Date Array",
-                //boolArray: "Bool Array",
-            };
-            $scope.types["text-array"] = "Text Array";
-            $scope.types["number-array"] = "Number Array";
-            $scope.types["date-array"] = "Date Array";
-            $scope.types["bool-array"] = "Bool Array";
+            var types = [
+                { code: "text", text: "Text" },
+                { code: "number", text: "Number" },
+                { code: "date", text: "Date" },
+                { code: "bool", text: "Bool" },
+                { code: "text-array", text: "Text Array" },
+                { code: "number-array", text: "Number Array" },
+                { code: "date-array", text: "Date Array" },
+                { code: "bool-array", text: "Bool Array" }
+            ];
+
+            if ($scope.allowedTypes) {
+                var argumentTypes = $scope.allowedTypes.split(/[\s,]+/);
+
+                for (var i = types.length - 1; i >= 0 ; i--) {
+                    if (argumentTypes.indexOf(types[i].code) === -1) {
+                        types.splice(i, 1);
+                    }
+                }
+            }
+            $scope.types = types;
 
             $scope.propertyTypeChanged = function (property) {
-                var isArray =
-                    property.type === "text-array" || property.type === "number-array" ||
-                    property.type === "date-array" || property.type === "bool-array";
-
-                if (isArray) {
-                    property.value = [null, null, null];
-                } else {
-                    property.value = null;
-                }
+                property.value = getPropertyDefaultValue(property.type);
             };
 
             $scope.add = function () {
+                if (!$scope.types || $scope.types.length <= 0) {
+                    return;
+                }
+
                 if (!$scope.properties) {
                     $scope.properties = [];
                 }
-
-                $scope.properties.push({ name: null, type: "text", value: null });
+                var propertyType = $scope.types[0].code;
+                $scope.properties.push(
+                    {
+                        name: null,
+                        type: propertyType,
+                        value: getPropertyDefaultValue(propertyType)
+                    });
             };
 
-            $scope.delete = function(index) {
+            $scope.delete = function (index) {
                 $scope.properties.splice(index, 1);
+            };
+
+            function getPropertyDefaultValue(propertyType) {
+                var isArray =
+                   propertyType === "text-array" || propertyType === "number-array" ||
+                   propertyType === "date-array" || propertyType === "bool-array";
+
+                if (isArray) {
+                    return  [null, null, null];
+                } else {
+                    return null;
+                }
             };
         }],
         templateUrl: 'content/properties.html'

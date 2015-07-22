@@ -84,9 +84,22 @@ namespace Web
 
         private MessageResult HandlePeopleUnset(PeopleUnset model)
         {
+            var propertyNamesObj = ValueParser.ParseArray(model.PropertyNames, ValueParser.ParseText);
+            IList<string> propertyNames;
+            if (propertyNamesObj == null)
+            {
+                propertyNames = new List<string>(0);
+            }
+            else
+            {
+                propertyNames = propertyNamesObj
+                    .OfType<string>()
+                    .ToList();
+            }
+
             return new MessageHandler(model).Handle(
-               (client, properties) => client.PeopleUnsetTest(model.DistinctId, model.PropertyNames),
-               (client, properties) => client.PeopleUnion(model.DistinctId, model.PropertyNames));
+               (client, properties) => client.PeopleUnsetTest(model.DistinctId, propertyNames),
+               (client, properties) => client.PeopleUnset(model.DistinctId, propertyNames));
         }
 
         private MessageResult HandlePeopleDelete(ModelBase model)
@@ -215,10 +228,13 @@ namespace Web
             private IDictionary<string, object> GetPropertiesDictionary(IEnumerable<Property> properties)
             {
                 return (properties ?? Enumerable.Empty<Property>())
-                    .ToDictionary(x => x.Name, ParsePropertyValue);
+                    .ToDictionary(x => x.Name, ValueParser.ParsePropertyValue);
             }
+        }
 
-            private object ParsePropertyValue(Property property)
+        private class ValueParser
+        {
+            public static object ParsePropertyValue(Property property)
             {
                 var value = property.Value;
                 switch (property.Type)
@@ -232,7 +248,7 @@ namespace Web
                     case "bool":
                         return ParseBool(value);
                     case "text-array":
-                        return ParseArray(value, ParseText); 
+                        return ParseArray(value, ParseText);
                     case "number-array":
                         return ParseArray(value, ParseNumber);
                     case "date-array":
@@ -244,17 +260,17 @@ namespace Web
                 }
             }
 
-            private static object ParseText(object value)
+            public static object ParseText(object value)
             {
                 return (value is string) ? value : null;
             }
 
-            private static object ParseNumber(object value)
+            public static object ParseNumber(object value)
             {
                 return (value is int || value is decimal) ? value : null;
             }
 
-            private static object ParseDateTime(object value)
+            public static object ParseDateTime(object value)
             {
                 DateTime date;
                 if (value != null && DateTime.TryParse(value as string, out date))
@@ -264,19 +280,19 @@ namespace Web
                 return null;
             }
 
-            private static object ParseBool(object value)
+            public static object ParseBool(object value)
             {
                 return (value is bool) ? value : null;
             }
 
-            private object ParseArray(object value, Func<object, object> parseArrayItemFn)
+            public static List<object> ParseArray(object value, Func<object, object> parseArrayItemFn)
             {
                 if (value is IEnumerable)
                 {
-                    return ((IEnumerable) (value))
+                    return ((IEnumerable)(value))
                         .Cast<object>()
-                        .Where(x => x != null)
                         .Select(parseArrayItemFn)
+                        .Where(x => x != null)
                         .ToList();
                 }
                 return null;
