@@ -101,7 +101,6 @@
     <Content Include="Content\md-services.js" />
     <Content Include="Content\properties.html" />
     <Content Include="Content\md-directives.js" />
-    <Content Include="Content\ui-bootstrap-tpls-0.11.0.min.js" />
     <Content Include="index.html" />
     <Content Include="Web.config" />
   </ItemGroup>

@@ -22,8 +22,8 @@
                 <input type="number" ng-if="property.type === 'number'"
                        ng-model="property.value" class="form-control input-sm" />
                 <input type="text" ng-if="property.type === 'date'"
-                       ng-click="datepopupOpen = true"
-                       datepicker-popup ng-model="property.value" is-open="datepopupOpen"
+                       datepicker-popup ng-model="property.value"
+                       ng-click="datepopupOpen = true" is-open="datepopupOpen"
                        show-button-bar="false" class="form-control input-sm" />
                 <input type="checkbox" ng-if="property.type === 'bool'"
                        ng-model="property.value" class="input-sm">

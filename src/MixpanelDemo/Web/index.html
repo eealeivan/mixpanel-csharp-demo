@@ -7,174 +7,202 @@
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet" />
     <link href="/content/github.css" rel="stylesheet" />
 </head>
-    <body>
-        <div class="container" ng-app="indexApp" ng-controller="IndexCtrl">
-            <div class="page-header">
-                <h1>mixpanel-csharp demo</h1>
-            </div>
-            <div class="row">
-                <div class="col-sm-2">
-                    <h3>Message Type</h3>
-                    <div class="list-group">
-                        <a ng-repeat="messageType in messageTypes"
-                           ng-class="{active: messageType == activeMessageType}"
-                           ng-click="changeActiveMessageType(messageType); $event.preventDefault();"
-                           href="#" class="list-group-item">
-                            {{messageType}}
-                        </a>
+<body>
+    <div class="container" ng-app="indexApp" ng-controller="IndexCtrl">
+        <div class="page-header">
+            <h1>mixpanel-csharp demo</h1>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">
+                <h3>Message Type</h3>
+                <div class="list-group">
+                    <a ng-repeat="messageType in messageTypes"
+                       ng-class="{active: messageType == activeMessageType}"
+                       ng-click="changeActiveMessageType(messageType); $event.preventDefault();"
+                       href="#" class="list-group-item">
+                        {{messageType}}
+                    </a>
+                </div>
+                <h3>Configuration</h3>
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <div class="col-sm-10">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox"
+                                           ng-model="config.useJsonNet"
+                                           ng-change="autosaveManager.performAutosave()">
+                                    Use Json.NET
+                                    <span class="glyphicon glyphicon-question-sign"
+                                          tooltip-placement="right"
+                                          tooltip="Json.Net will be used as a JSON serializer instead of default JavaScriptSerializer">
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox"
+                                           ng-model="config.useHttpClient"
+                                           ng-change="autosaveManager.performAutosave()">
+                                    Use HttpClient
+                                    <span class="glyphicon glyphicon-question-sign"
+                                          tooltip-placement="right"
+                                          tooltip="HttpClient will be used to send messages to Mixpanel instead of default implementation">
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <h3>Configuration</h3>
-                    <form class="form-horizontal">
+                </form>
+            </div>
+            <div class="col-sm-5">
+                <h3>Message Data</h3>
+                <div class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">Token *</label>
+                        <div class="col-sm-8">
+                            <input type="text"
+                                   ng-model="model.token"
+                                   ng-change="autosaveManager.performAutosave()"
+                                   class="form-control input-sm" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            Distinct ID <span ng-hide="activeMessageType == 'track'">*</span>
+                            <span class="glyphicon glyphicon-question-sign"
+                                  tooltip-placement="right"
+                                  tooltip="You can leave this field empty and set Distinct ID with super properties">
+                            </span>
+                        </label>
+                        <div class="col-sm-8">
+                            <input type="text"
+                                   ng-model="model.distinctId"
+                                   ng-change="autosaveManager.performAutosave()"
+                                   class="form-control input-sm" />
+                        </div>
+                    </div>
+                </div>
+                <!--<div class='row'><div class='col-sm-12'><hr /></div></div>-->
+                <!--Track-->
+                <div ng-show="activeMessageType == 'track'">
+                    <div class="form-horizontal">
                         <div class="form-group">
-                            <div class="col-sm-10">
-                                <div class="checkbox">
-                                    <label>
-                                        <input type="checkbox"
-                                               ng-model="config.useJsonNet"
-                                               ng-change="autosaveManager.performAutosave()"> 
-                                        Use Json.NET
-                                        <span class="glyphicon glyphicon-question-sign"
-                                              tooltip-placement="right"
-                                              tooltip="Json.Net will be used as a JSON serializer instead of default JavaScriptSerializer">
-                                        </span>
-                                    </label>
-                                </div>
-                                <div class="checkbox">
-                                    <label>
-                                        <input type="checkbox"
-                                               ng-model="config.useHttpClient"
-                                               ng-change="autosaveManager.performAutosave()">
-                                        Use HttpClient
-                                        <span class="glyphicon glyphicon-question-sign"
-                                              tooltip-placement="right"
-                                              tooltip="HttpClient will be used to send messages to Mixpanel instead of default implementation">
-                                        </span>
-                                    </label>
+                            <label class="col-sm-4 control-label">Event *</label>
+                            <div class="col-sm-8">
+                                <input type="text" ng-model="model.track.event" class="form-control input-sm" />
+                            </div>
+                        </div>
+                    </div>
+                    <md-properties ng-model="model.track.properties"></md-properties>
+                </div>
+
+                <!--Alias-->
+                <div ng-show="activeMessageType == 'alias'">
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">Alias *</label>
+                            <div class="col-sm-8">
+                                <input type="text" ng-model="model.alias.fromDistinctId" class="form-control input-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--PeopleSet-->
+                <div ng-show="activeMessageType == 'people-set'">
+                    <md-properties ng-model="model.peopleSet.properties"></md-properties>
+                </div>
+
+                <!--PeopleSetOnce-->
+                <div ng-show="activeMessageType == 'people-set-once'">
+                    <md-properties ng-model="model.peopleSetOnce.properties"></md-properties>
+                </div>
+
+                <!--PeopleAdd-->
+                <div ng-show="activeMessageType == 'people-add'">
+                    <md-properties ng-model="model.peopleAdd.properties" allowed-types="number"></md-properties>
+                </div>
+
+                <!--PeopleAppend-->
+                <div ng-show="activeMessageType == 'people-append'">
+                    <md-properties ng-model="model.peopleAppend.properties"></md-properties>
+                </div>
+
+                <!--PeopleUnion-->
+                <div ng-show="activeMessageType == 'people-union'">
+                    <md-properties ng-model="model.peopleUnion.properties"
+                                   allowed-types="text-array,number-array,date-array,bool-array"></md-properties>
+                </div>
+
+                <!--PeopleUnset-->
+                <div ng-show="activeMessageType == 'people-unset'">
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">Property Names</label>
+                            <div class="col-sm-9">
+                                <div ng-repeat="propertyName in model.peopleUnset.propertyNames track by $index">
+                                    <input type="text" ng-model="model.peopleUnset.propertyNames[$index]" class="form-control input-sm" />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--PeopleDelete (No extra controls needed)-->
+
+                <!--PeopleTrackCharge-->
+                <div ng-show="activeMessageType == 'people-track-charge'">
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">Amount *</label>
+                            <div class="col-sm-8">
+                                <input type="number" ng-model="model.peopleTrackCharge.amount" class="form-control input-sm" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label">Time</label>
+                            <div class="col-sm-8">
+                                <input type="text"
+                                       datepicker-popup ng-model="model.peopleTrackCharge.time"
+                                       ng-click="datepopupOpen = true" is-open="datepopupOpen"
+                                       show-button-bar="false" class="form-control input-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Super Properties</h3>
+                <md-properties ng-model="model.superProperties"></md-properties>
+                <button class="btn btn-success btn-lg pull-right" ng-click="send()">Send</button>
+            </div>
+            <div class="col-sm-5">
+                <h3>Result</h3>
+                <div ng-show="isResultSuccess()" class="panel-body">
+                    <form role="form">
+                        <div class="form-group">
+                            <label>JSON sent to Mixpanel</label>
+                            <div hljs source="result.json"></div>
+                        </div>
+                    </form>
+                    <label class="control-label">Response: </label>
+                    <!--<kbd>{{result.mixpanelResponse}}</kbd>-->
+                    <span ng-show="isResultSuccess()" class="label label-success">SUCCESS</span>
+                    <span ng-show="isResultError()" class="label label-danger">ERROR</span>
+                </div>
+                <div ng-show="isResultError()" class="panel-body">
+                    <form role="form">
+                        <div class="form-group">
+                            <label>Error details</label>
+                            <pre>{{result.error}}</pre>
                         </div>
                     </form>
                 </div>
-                <div class="col-sm-5">
-                    <h3>Message Data</h3>
-                    <div class="form-horizontal">
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">Token</label>
-                            <div class="col-sm-9">
-                                <input type="text" 
-                                       ng-model="model.token" 
-                                       ng-change="autosaveManager.performAutosave()" 
-                                       class="form-control input-sm" />
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">Distinct Id</label>
-                            <div class="col-sm-9">
-                                <input type="text"
-                                       ng-model="model.distinctId"
-                                       ng-change="autosaveManager.performAutosave()"
-                                       class="form-control input-sm" />
-                            </div>
-                        </div>
-                    </div>
-                    <!--<div class='row'><div class='col-sm-12'><hr /></div></div>-->
-                    
-                    <!--Track-->
-                    <div ng-show="activeMessageType == 'track'">
-                        <div class="form-horizontal">
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">Event</label>
-                                <div class="col-sm-9">
-                                    <input type="text" ng-model="model.track.event" class="form-control input-sm" />
-                                </div>
-                            </div>
-                        </div>
-                        <md-properties ng-model="model.track.properties"></md-properties>
-                    </div>
-
-                    <!--Alias-->
-                    <div ng-show="activeMessageType == 'alias'">
-                        <div class="form-horizontal">
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">Alias</label>
-                                <div class="col-sm-9">
-                                    <input type="text" ng-model="model.alias.fromDistinctId" class="form-control input-sm" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!--PeopleSet-->
-                    <div ng-show="activeMessageType == 'people-set'">
-                        <md-properties ng-model="model.peopleSet.properties"></md-properties>
-                    </div>
-
-                    <!--PeopleSetOnce-->
-                    <div ng-show="activeMessageType == 'people-set-once'">
-                        <md-properties ng-model="model.peopleSetOnce.properties"></md-properties>
-                    </div>
-
-                    <!--PeopleAdd-->
-                    <div ng-show="activeMessageType == 'people-add'">
-                        <md-properties ng-model="model.peopleAdd.properties" allowed-types="number"></md-properties>
-                    </div>
-
-                    <!--PeopleAppend-->
-                    <div ng-show="activeMessageType == 'people-append'">
-                        <md-properties ng-model="model.peopleAppend.properties"></md-properties>
-                    </div>
-
-                    <!--PeopleUnion-->
-                    <div ng-show="activeMessageType == 'people-union'">
-                        <md-properties ng-model="model.peopleUnion.properties"
-                                       allowed-types="text-array,number-array,date-array,bool-array"></md-properties>
-                    </div>
-                    
-                    <!--PeopleUnset-->
-                    <div ng-show="activeMessageType == 'people-unset'">
-                        <div class="form-horizontal">
-                            <div class="form-group">
-                                <label class="col-sm-3 control-label">Property Names</label>
-                                <div class="col-sm-9">
-                                    <div ng-repeat="propertyName in model.peopleUnset.propertyNames track by $index">
-                                        <input type="text" ng-model="model.peopleUnset.propertyNames[$index]" class="form-control input-sm" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h3>Super Properties</h3>
-                    <md-properties ng-model="model.superProperties"></md-properties>
-                    <button class="btn btn-success btn-lg pull-right" ng-click="send()">Send</button>
-                </div>
-                <div class="col-sm-5">
-                    <h3>Result</h3>
-                    <div ng-show="isResultSuccess()" class="panel-body">
-                        <form role="form">
-                            <div class="form-group">
-                                <label>JSON sent to Mixpanel</label>
-                                <div hljs source="result.json"></div>
-                            </div>
-                        </form>
-                        <label class="control-label">Mixpanel response: </label>
-                        <!--<kbd>{{result.mixpanelResponse}}</kbd>-->
-                        <span ng-show="isResultSuccess()" class="label label-success">1</span>
-                        <span ng-show="isResultError()" class="label label-danger">0</span>
-                    </div>
-                    <div ng-show="isResultError()" class="panel-body">
-                        <form role="form">
-                            <div class="form-group">
-                                <label>Error details</label>
-                                <pre>{{result.error}}</pre>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             </div>
         </div>
+    </div>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script src="/content/ui-bootstrap-tpls-0.13.0.min.js"></script>
     <script src="/content/highlight.pack.js"></script>

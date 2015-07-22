@@ -5,10 +5,10 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
     $scope.model = {};
     $scope.model.peopleUnset = { propertyNames: [null, null, null] };
     $scope.config = {};
-
+    
     $scope.messageTypes = [
         "track", "alias", "people-set", "people-set-once", "people-add", "people-append",
-        "people-union", "people-unset"];
+        "people-union", "people-unset", "people-delete", "people-track-charge"];
     $scope.activeMessageType = $scope.messageTypes[0];
     $scope.changeActiveMessageType = function (messageType) {
         $scope.activeMessageType = messageType;
@@ -105,6 +105,23 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
         url: "/people-unset",
         getModelFn: function () {
             return buildModel(null, $scope.model.peopleUnset);
+        }
+    };
+
+    messageActionGrid["people-delete"] = {
+        url: "/people-delete",
+        getModelFn: function () {
+            return buildModel(null, null);
+        }
+    };
+
+    messageActionGrid["people-track-charge"] = {
+        url: "/people-track-charge",
+        getModelFn: function () {
+            return buildModel(null, {
+                amount: $scope.model.peopleTrackCharge.amount,
+                time: $scope.model.peopleTrackCharge.time
+            });
         }
     };
 
