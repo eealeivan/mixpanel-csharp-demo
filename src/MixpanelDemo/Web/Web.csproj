@@ -109,7 +109,6 @@
     <Compile Include="Models\ActionType.cs" />
     <Compile Include="Models\Alias.cs" />
     <Compile Include="Models\Config.cs" />
-    <Compile Include="Models\MessageResult.cs" />
     <Compile Include="Models\ModelBase.cs" />
     <Compile Include="Models\PeopleTrackCharge.cs" />
     <Compile Include="Models\PeopleUnset.cs" />

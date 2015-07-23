@@ -2,7 +2,7 @@
 {
     public enum ActionType
     {
-        Send,
-        Queue
+        SendSingleMessage,
+        GetMessage
     }
 }

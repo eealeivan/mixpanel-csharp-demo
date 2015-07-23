@@ -1,6 +1,6 @@
 ﻿var indexApp = angular.module("indexApp", ["ui.bootstrap", "hljs", "md-services", "md-directives"]);
 
-indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", function ($scope, $http, localStorageService) {
+indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "localStorageService", function ($scope, $http, $interval, $window, localStorageService) {
     // Set init model values
     $scope.model = {
         token: null,
@@ -39,6 +39,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
         useJsonNet: false,
         useHttpClient: false
     };
+    $scope.queuedMessages = [];
 
     $scope.messageTypes = [
         "track", "alias", "people-set", "people-set-once", "people-add", "people-append",
@@ -49,37 +50,37 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
     };
 
     $scope.send = function () {
-        performMessageAction("send", function (data) {
-            $scope.resultType = "send";
-            $scope.result = {
-                json: JSON.stringify(JSON.parse(data.data), null, 2),
-                error: data.error,
-                success: data.success ? true : false
-            };
+        sendOrEnqueue("SendSingleMessage", function (data) {
+            $scope.result.json = JSON.stringify(JSON.parse(data.sentJson), null, 2);
         });
     };
 
-    $scope.addToQueue = function () {
-        performMessageAction("queue", function (data) {
-
+    $scope.enqueue = function () {
+        sendOrEnqueue("GetMessage", function (data) {
+            $scope.queuedMessages.push(data);
+            $scope.result.json = JSON.stringify(data.message, null, 2);
         });
-        var actionData = messageActionGrid[$scope.activeMessageType];
-        var model = actionData.getModelFn();
-        model.actionType = "queue";
-    }
+    };
 
-    function performMessageAction(actionType, successFn) {
+    function sendOrEnqueue(actionType, successFn) {
         var actionData = messageActionGrid[$scope.activeMessageType];
         var model = actionData.getModelFn();
         model.actionType = actionType;
 
         $http
-            .post(actionData.url, angular.toJson(model, true))
+            .post(actionData.url, $window.angular.toJson(model, true))
             .success(function (data) {
-                successFn(data);
+                $scope.resultType = actionType;
+                $scope.result = {
+                    error: data.error,
+                    success: data.success ? true : false
+                };
+                if (successFn) {
+                    successFn(data);
+                }
             });
     };
-
+    
     var messageActionGrid = {};
     var buildModel = function (properties, additinalData) {
         var model = {
@@ -94,7 +95,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
         };
 
         if (additinalData) {
-            angular.extend(model, additinalData);
+            $window.angular.extend(model, additinalData);
         }
 
         return model;

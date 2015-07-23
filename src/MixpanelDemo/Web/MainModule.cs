@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -15,9 +14,6 @@ namespace Web
 {
     public class MainModule : NancyModule
     {
-        private static readonly ConcurrentQueue<MixpanelMessage> QueuedMessages = 
-            new ConcurrentQueue<MixpanelMessage>(); 
-
         public MainModule()
         {
             Get["/"] = _ => View["index.html"];
@@ -31,9 +27,10 @@ namespace Web
             Post["/people-unset", true] = async (m, ct) => await HandlePeopleUnsetAsync(this.Bind<PeopleUnset>());
             Post["/people-delete", true] = async (m, ct) => await HandlePeopleDeleteAsync(this.Bind<ModelBase>());
             Post["/people-track-charge", true] = async (m, ct) => await HandlePeopleTrackChargeAsync(this.Bind<PeopleTrackCharge>());
+            Post["/send", true] = async (m, ct) => await HandleSendAsync(this.Bind<List<MixpanelMessage>>());
         }
-        
-        private async Task<MessageResult> HandleTrackAsync(Track model)
+
+        private async Task<object> HandleTrackAsync(Track model)
         {
             try
             {
@@ -48,7 +45,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandleAliasAsync(Alias model)
+        private async Task<object> HandleAliasAsync(Alias model)
         {
             try
             {
@@ -63,7 +60,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleSetAsync(ModelBase model)
+        private async Task<object> HandlePeopleSetAsync(ModelBase model)
         {
             try
             {
@@ -78,7 +75,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleSetOnceAsync(ModelBase model)
+        private async Task<object> HandlePeopleSetOnceAsync(ModelBase model)
         {
             try
             {
@@ -93,7 +90,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleAddAsync(ModelBase model)
+        private async Task<object> HandlePeopleAddAsync(ModelBase model)
         {
             try
             {
@@ -108,7 +105,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleAppendAsync(ModelBase model)
+        private async Task<object> HandlePeopleAppendAsync(ModelBase model)
         {
             try
             {
@@ -123,7 +120,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleUnionAsync(ModelBase model)
+        private async Task<object> HandlePeopleUnionAsync(ModelBase model)
         {
             try
             {
@@ -138,7 +135,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleUnsetAsync(PeopleUnset model)
+        private async Task<object> HandlePeopleUnsetAsync(PeopleUnset model)
         {
             try
             {
@@ -166,7 +163,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleDeleteAsync(ModelBase model)
+        private async Task<object> HandlePeopleDeleteAsync(ModelBase model)
         {
             try
             {
@@ -181,7 +178,7 @@ namespace Web
             }
         }
 
-        private async Task<MessageResult> HandlePeopleTrackChargeAsync(PeopleTrackCharge model)
+        private async Task<object> HandlePeopleTrackChargeAsync(PeopleTrackCharge model)
         {
             try
             {
@@ -199,9 +196,24 @@ namespace Web
             }
         }
 
-        private MessageResult HandleException(Exception e)
+        private async Task<object> HandleSendAsync(List<MixpanelMessage> messages)
         {
-            return new MessageResult
+            try
+            {
+                return await Task.FromResult(
+                       new
+                       {
+                       });
+            }
+            catch (Exception e)
+            {
+                return Task.FromResult(HandleException(e)).Result;
+            }
+        }
+
+        private object HandleException(Exception e)
+        {
+            return new
             {
                 Success = false,
                 Error = e.Message
@@ -221,7 +233,7 @@ namespace Web
                 _properties = GetPropertiesDictionary(model.Properties);
             }
 
-            public async Task<MessageResult> HandleAsync(
+            public async Task<object> HandleAsync(
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessage> getMessageFn,
                 Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
@@ -231,29 +243,29 @@ namespace Web
                 if (testResult.Exception != null)
                 {
                     return await Task.FromResult(
-                        new MessageResult
+                        new
                         {
+                            Success = false,
                             Error = testResult.Exception.Message
                         });
                 }
 
                 switch (_model.ActionType)
                 {
-                    case ActionType.Send:
+                    case ActionType.SendSingleMessage:
                         bool success = await sendAsyncFn(_client, _properties);
-                        return new MessageResult
+                        return new
                         {
                             Success = success,
-                            Data = testResult.Json
+                            SentJson = testResult.Json
                         };
-                    case ActionType.Queue:
+                    case ActionType.GetMessage:
                         MixpanelMessage message = getMessageFn(_client, _properties);
-                        QueuedMessages.Enqueue(message);
                         return await Task.FromResult(
-                            new MessageResult
+                            new
                             {
                                 Success = true,
-                                Data = JsonConvert.SerializeObject(message.Data)
+                                Message = message
                             });
                     default:
                         throw new ArgumentOutOfRangeException();
