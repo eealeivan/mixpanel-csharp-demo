@@ -178,25 +178,27 @@
             </div>
             <div class="col-sm-5">
                 <h3>Result</h3>
-                <div ng-show="isResultSuccess()" class="panel-body">
-                    <form role="form">
-                        <div class="form-group">
-                            <label>JSON sent to Mixpanel</label>
-                            <div hljs source="result.json"></div>
-                        </div>
-                    </form>
-                    <label class="control-label">Response: </label>
-                    <!--<kbd>{{result.mixpanelResponse}}</kbd>-->
-                    <span ng-show="isResultSuccess()" class="label label-success">SUCCESS</span>
-                    <span ng-show="isResultError()" class="label label-danger">ERROR</span>
+                <div ng-hide="!result" style="margin-bottom: 15px;">
+                    <span ng-show="result.success" class="label label-success">SUCCESS</span>
+                    <span ng-hide="result.success" class="label label-danger">ERROR</span>
                 </div>
-                <div ng-show="isResultError()" class="panel-body">
-                    <form role="form">
-                        <div class="form-group">
-                            <label>Error details</label>
-                            <pre>{{result.error}}</pre>
-                        </div>
-                    </form>
+                <div ng-show="resultType == 'send'">
+                    <div ng-show="result.success">
+                        <form role="form">
+                            <div class="form-group">
+                                <label>JSON sent to Mixpanel</label>
+                                <div hljs source="result.json"></div>
+                            </div>
+                        </form>
+                    </div>
+                    <div ng-hide="result.success">
+                        <form role="form">
+                            <div class="form-group">
+                                <label>Error details</label>
+                                <pre>{{result.error}}</pre>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

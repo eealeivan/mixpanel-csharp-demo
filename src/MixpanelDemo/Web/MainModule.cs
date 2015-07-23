@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,9 +13,12 @@ using Web.Models;
 
 namespace Web
 {
-    public class IndexModule : NancyModule
+    public class MainModule : NancyModule
     {
-        public IndexModule()
+        private static readonly ConcurrentQueue<MixpanelMessage> QueuedMessages = 
+            new ConcurrentQueue<MixpanelMessage>(); 
+
+        public MainModule()
         {
             Get["/"] = _ => View["index.html"];
             Post["/track", true] = async (m, ct) => await HandleTrackAsync(this.Bind<Track>());
@@ -28,109 +32,202 @@ namespace Web
             Post["/people-delete", true] = async (m, ct) => await HandlePeopleDeleteAsync(this.Bind<ModelBase>());
             Post["/people-track-charge", true] = async (m, ct) => await HandlePeopleTrackChargeAsync(this.Bind<PeopleTrackCharge>());
         }
-
+        
         private async Task<MessageResult> HandleTrackAsync(Track model)
         {
-            return await new MessageHandler(model).HandleAsync(
-                (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
-                (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties)); 
-        } 
-        
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
+                    (client, properties) => client.GetTrackMessage(model.Event, model.DistinctId, properties),
+                    (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
+        }
+
         private async Task<MessageResult> HandleAliasAsync(Alias model)
         {
-            return await new MessageHandler(model).HandleAsync(
-                (client, properties) => client.AliasTest(model.DistinctId, model.FromDistinctId),
-                (client, properties) => client.AliasAsync(model.DistinctId, model.FromDistinctId));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.AliasTest(model.DistinctId, model.FromDistinctId),
+                    (client, properties) => client.GetAliasMessage(model.DistinctId, model.FromDistinctId),
+                    (client, properties) => client.AliasAsync(model.DistinctId, model.FromDistinctId));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleSetAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-                (client, properties) => client.PeopleSetTest(model.DistinctId, properties),
-                (client, properties) => client.PeopleSetAsync(model.DistinctId, properties));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleSetTest(model.DistinctId, properties),
+                    (client, properties) => client.GetPeopleSetMessage(model.DistinctId, properties),
+                    (client, properties) => client.PeopleSetAsync(model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleSetOnceAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-                (client, properties) => client.PeopleSetOnceTest(model.DistinctId, properties),
-                (client, properties) => client.PeopleSetOnceAsync(model.DistinctId, properties));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleSetOnceTest(model.DistinctId, properties),
+                    (client, properties) => client.GetPeopleSetOnceMessage(model.DistinctId, properties),
+                    (client, properties) => client.PeopleSetOnceAsync(model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleAddAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => client.PeopleAddTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleAddAsync(model.DistinctId, properties));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleAddTest(model.DistinctId, properties),
+                    (client, properties) => client.GetPeopleAddMessage(model.DistinctId, properties),
+                    (client, properties) => client.PeopleAddAsync(model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleAppendAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => client.PeopleAppendTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleAppendAsync(model.DistinctId, properties));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleAppendTest(model.DistinctId, properties),
+                    (client, properties) => client.GetPeopleAppendMessage(model.DistinctId, properties),
+                    (client, properties) => client.PeopleAppendAsync(model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleUnionAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => client.PeopleUnionTest(model.DistinctId, properties),
-               (client, properties) => client.PeopleUnionAsync(model.DistinctId, properties));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleUnionTest(model.DistinctId, properties),
+                    (client, properties) => client.GetPeopleUnionMessage(model.DistinctId, properties),
+                    (client, properties) => client.PeopleUnionAsync(model.DistinctId, properties));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleUnsetAsync(PeopleUnset model)
         {
-            var propertyNamesObj = ValueParser.ParseArray(model.PropertyNames, ValueParser.ParseText);
-            IList<string> propertyNames;
-            if (propertyNamesObj == null)
+            try
             {
-                propertyNames = new List<string>(0);
-            }
-            else
-            {
-                propertyNames = propertyNamesObj
-                    .OfType<string>()
-                    .ToList();
-            }
+                var propertyNamesObj = ValueParser.ParseArray(model.PropertyNames, ValueParser.ParseText);
+                IList<string> propertyNames;
+                if (propertyNamesObj == null)
+                {
+                    propertyNames = new List<string>(0);
+                }
+                else
+                {
+                    propertyNames = propertyNamesObj
+                        .OfType<string>()
+                        .ToList();
+                }
 
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => client.PeopleUnsetTest(model.DistinctId, propertyNames),
-               (client, properties) => client.PeopleUnsetAsync(model.DistinctId, propertyNames));
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleUnsetTest(model.DistinctId, propertyNames),
+                    (client, properties) => client.GetPeopleUnsetMessage(model.DistinctId, propertyNames),
+                    (client, properties) => client.PeopleUnsetAsync(model.DistinctId, propertyNames));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
         }
 
         private async Task<MessageResult> HandlePeopleDeleteAsync(ModelBase model)
         {
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => client.PeopleDeleteTest(model.DistinctId),
-               (client, properties) => client.PeopleDeleteAsync(model.DistinctId));
-        }  
-        
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) => client.PeopleDeleteTest(model.DistinctId),
+                    (client, properties) => client.GetPeopleDeleteMessage(model.DistinctId),
+                    (client, properties) => client.PeopleDeleteAsync(model.DistinctId));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
+        }
+
         private async Task<MessageResult> HandlePeopleTrackChargeAsync(PeopleTrackCharge model)
         {
-            return await new MessageHandler(model).HandleAsync(
-               (client, properties) => 
-                   client.PeopleTrackChargeTest(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
-               (client, properties) =>
-                   client.PeopleTrackChargeAsync(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow));
+            try
+            {
+                return await new MessageHandler(model).HandleAsync(
+                    (client, properties) =>
+                        client.PeopleTrackChargeTest(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
+                        (client, properties) =>
+                        client.GetPeopleTrackChargeMessage(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
+                    (client, properties) =>
+                        client.PeopleTrackChargeAsync(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow));
+            }
+            catch (Exception e)
+            {
+                return HandleException(e);
+            }
+        }
+
+        private MessageResult HandleException(Exception e)
+        {
+            return new MessageResult
+            {
+                Success = false,
+                Error = e.Message
+            };
         }
 
         private class MessageHandler
         {
-            private IMixpanelClient Client { get; set; }
-            private IDictionary<string, object> Properties { get; set; }
+            private readonly ModelBase _model;
+            private readonly IMixpanelClient _client;
+            private readonly IDictionary<string, object> _properties;
 
             public MessageHandler(ModelBase model)
             {
-                Client = GetMixpanelClient(model);
-                Properties = GetPropertiesDictionary(model.Properties);
+                _model = model;
+                _client = GetMixpanelClient(model);
+                _properties = GetPropertiesDictionary(model.Properties);
             }
 
             public async Task<MessageResult> HandleAsync(
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
+                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessage> getMessageFn,
                 Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
                 )
             {
-                var testResult = testFn(Client, Properties);
+                var testResult = testFn(_client, _properties);
                 if (testResult.Exception != null)
                 {
                     return await Task.FromResult(
@@ -140,13 +237,28 @@ namespace Web
                         });
                 }
 
-                bool mixpanelResponse = await sendAsyncFn(Client, Properties);
-                return new MessageResult
+                switch (_model.ActionType)
                 {
-                    SentJson = testResult.Json,
-                    MixpanelResponse = mixpanelResponse
-                };
-            } 
+                    case ActionType.Send:
+                        bool success = await sendAsyncFn(_client, _properties);
+                        return new MessageResult
+                        {
+                            Success = success,
+                            Data = testResult.Json
+                        };
+                    case ActionType.Queue:
+                        MixpanelMessage message = getMessageFn(_client, _properties);
+                        QueuedMessages.Enqueue(message);
+                        return await Task.FromResult(
+                            new MessageResult
+                            {
+                                Success = true,
+                                Data = JsonConvert.SerializeObject(message.Data)
+                            });
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
 
             private IMixpanelClient GetMixpanelClient(ModelBase model)
             {

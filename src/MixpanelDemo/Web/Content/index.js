@@ -2,10 +2,44 @@
 
 indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", function ($scope, $http, localStorageService) {
     // Set init model values
-    $scope.model = {};
-    $scope.model.peopleUnset = { propertyNames: [null, null, null] };
-    $scope.config = {};
-    
+    $scope.model = {
+        token: null,
+        distinctId: null,
+        track: {
+            event: null,
+            properties: null
+        },
+        alias: {
+            fromDistinctId: null
+        },
+        peopleSet: {
+            properties: null
+        },
+        peopleSetOnce: {
+            properties: null
+        },
+        peopleAdd: {
+            properties: null
+        },
+        peopleAppend: {
+            properties: null
+        },
+        peopleUnion: {
+            properties: null
+        },
+        peopleUnset: {
+            propertyNames: [null, null, null]
+        },
+        peopleTrackCharge: {
+            amount: null,
+            time: null
+        }
+    };
+    $scope.config = {
+        useJsonNet: false,
+        useHttpClient: false
+    };
+
     $scope.messageTypes = [
         "track", "alias", "people-set", "people-set-once", "people-add", "people-append",
         "people-union", "people-unset", "people-delete", "people-track-charge"];
@@ -15,27 +49,35 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "localStorageService", func
     };
 
     $scope.send = function () {
+        performMessageAction("send", function (data) {
+            $scope.resultType = "send";
+            $scope.result = {
+                json: JSON.stringify(JSON.parse(data.data), null, 2),
+                error: data.error,
+                success: data.success ? true : false
+            };
+        });
+    };
+
+    $scope.addToQueue = function () {
+        performMessageAction("queue", function (data) {
+
+        });
         var actionData = messageActionGrid[$scope.activeMessageType];
+        var model = actionData.getModelFn();
+        model.actionType = "queue";
+    }
+
+    function performMessageAction(actionType, successFn) {
+        var actionData = messageActionGrid[$scope.activeMessageType];
+        var model = actionData.getModelFn();
+        model.actionType = actionType;
+
         $http
-            .post(actionData.url, angular.toJson(actionData.getModelFn(), true))
+            .post(actionData.url, angular.toJson(model, true))
             .success(function (data) {
-                $scope.result = {
-                    json: JSON.stringify(JSON.parse(data.sentJson), null, 2),
-                    error: data.error,
-                    mixpanelResponse:
-                        data.mixpanelResponse
-                            ? (data.mixpanelResponse === true ? "1" : "0")
-                            : undefined
-                };
+                successFn(data);
             });
-    };
-
-    $scope.isResultSuccess = function () {
-        return $scope.result && !$scope.result.error;
-    };
-
-    $scope.isResultError = function () {
-        return !$scope.isResultSuccess;
     };
 
     var messageActionGrid = {};
