@@ -49,7 +49,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "lo
         $scope.activeMessageType = messageType;
     };
 
-    $scope.send = function () {
+    $scope.sendSingleMessage = function () {
         sendOrEnqueue("SendSingleMessage", function (data) {
             $scope.result.json = JSON.stringify(JSON.parse(data.sentJson), null, 2);
         });
@@ -57,7 +57,7 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "lo
 
     $scope.enqueue = function () {
         sendOrEnqueue("GetMessage", function (data) {
-            $scope.queuedMessages.push(data);
+            $scope.queuedMessages.push(data.message);
             $scope.result.json = JSON.stringify(data.message, null, 2);
         });
     };
@@ -80,7 +80,23 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "lo
                 }
             });
     };
-    
+
+    $scope.sendBatchMessage = function () {
+        var model = buildModel();
+        delete model.token;
+        delete model.distinctId;
+        delete model.superProperties;
+        model.actionType = "SendBatchMessage";
+        model.messages = $scope.queuedMessages;
+
+        $http
+            .post("/send", $window.angular.toJson(model), true)
+            .success(function (data) {
+                $scope.queuedMessages = [];
+                console.log(data);
+            });
+    };
+
     var messageActionGrid = {};
     var buildModel = function (properties, additinalData) {
         var model = {

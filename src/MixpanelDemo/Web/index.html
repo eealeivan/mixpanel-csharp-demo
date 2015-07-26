@@ -177,11 +177,11 @@
                 <div style="text-align: right;">
                     <div class="btn-group" role="group">
                         <button ng-click="enqueue()" class="btn btn-warning">Enqueue</button>
-                        <button ng-disabled="queuedMessages.length <= 0" ng-click="" class="btn btn-success">
+                        <button ng-disabled="queuedMessages.length <= 0" ng-click="sendBatchMessage()" class="btn btn-success">
                             Send {{queuedMessages.length}} message{{(queuedMessages.length == 0 || queuedMessages.length > 1) ? 's' : ''}} from queue
                         </button>
                     </div>
-                    <button ng-click="send()" class="btn btn-success">Send</button>
+                    <button ng-click="sendSingleMessage()" class="btn btn-success">Send</button>
                 </div>
             </div>
             <div class="col-sm-5">
@@ -209,6 +209,7 @@
                         </form>
                     </div>
                 </div>
+                <pre>{{queuedMessages | json}}</pre>
             </div>
         </div>
     </div>

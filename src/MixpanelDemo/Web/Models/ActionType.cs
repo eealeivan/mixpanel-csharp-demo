@@ -3,6 +3,7 @@
     public enum ActionType
     {
         SendSingleMessage,
-        GetMessage
+        GetMessage,
+        SendBatchMessage
     }
 }

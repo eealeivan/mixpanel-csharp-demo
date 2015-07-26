@@ -27,7 +27,7 @@ namespace Web
             Post["/people-unset", true] = async (m, ct) => await HandlePeopleUnsetAsync(this.Bind<PeopleUnset>());
             Post["/people-delete", true] = async (m, ct) => await HandlePeopleDeleteAsync(this.Bind<ModelBase>());
             Post["/people-track-charge", true] = async (m, ct) => await HandlePeopleTrackChargeAsync(this.Bind<PeopleTrackCharge>());
-            Post["/send", true] = async (m, ct) => await HandleSendAsync(this.Bind<List<MixpanelMessage>>());
+            Post["/send", true] = async (m, ct) => await HandleSendAsync(this.Bind<Send>());
         }
 
         private async Task<object> HandleTrackAsync(Track model)
@@ -196,14 +196,11 @@ namespace Web
             }
         }
 
-        private async Task<object> HandleSendAsync(List<MixpanelMessage> messages)
+        private async Task<object> HandleSendAsync(Send model)
         {
             try
             {
-                return await Task.FromResult(
-                       new
-                       {
-                       });
+                return await new MessageHandler(model).HandleSendBatchAsync();
             }
             catch (Exception e)
             {
@@ -239,14 +236,14 @@ namespace Web
                 Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
                 )
             {
-                var testResult = testFn(_client, _properties);
-                if (testResult.Exception != null)
+                var testMessage = testFn(_client, _properties);
+                if (testMessage.Exception != null)
                 {
                     return await Task.FromResult(
                         new
                         {
                             Success = false,
-                            Error = testResult.Exception.Message
+                            Error = testMessage.Exception.Message
                         });
                 }
 
@@ -257,7 +254,7 @@ namespace Web
                         return new
                         {
                             Success = success,
-                            SentJson = testResult.Json
+                            SentJson = testMessage.Json
                         };
                     case ActionType.GetMessage:
                         MixpanelMessage message = getMessageFn(_client, _properties);
@@ -270,6 +267,28 @@ namespace Web
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+            }
+
+            public async Task<object> HandleSendBatchAsync()
+            {
+                var messages = ((Send) _model).Messages;
+
+                var testBachMessages = _client.SendTest(messages);
+                var result = await _client.SendAsync(messages);
+                return new
+                {
+                    result.Success,
+                    SentJsons = testBachMessages
+                        .Select(testBatchMessage => new
+                        {
+                            SentJson = testBatchMessage.Exception == null 
+                                ? testBatchMessage.Json
+                                : null,
+                            Error = testBatchMessage.Exception != null 
+                                ? testBatchMessage.Exception.Message 
+                                : null
+                        })
+                };
             }
 
             private IMixpanelClient GetMixpanelClient(ModelBase model)
@@ -317,7 +336,16 @@ namespace Web
 
                 var superProperties = GetPropertiesDictionary(model.SuperProperties);
 
-                return new MixpanelClient(model.Token, config, superProperties);
+                switch (model.ActionType)
+                {
+                    case ActionType.SendSingleMessage:
+                    case ActionType.GetMessage:
+                        return new MixpanelClient(model.Token, config, superProperties);
+                    case ActionType.SendBatchMessage:
+                        return new MixpanelClient(config, superProperties);
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             private IDictionary<string, object> GetPropertiesDictionary(IEnumerable<Property> properties)
