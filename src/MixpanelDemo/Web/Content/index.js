@@ -50,19 +50,19 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "lo
     };
 
     $scope.sendSingleMessage = function () {
-        sendOrEnqueue("SendSingleMessage", function (data) {
+        sendSingleOrEnqueue("SendSingleMessage", function (data) {
             $scope.result.json = JSON.stringify(JSON.parse(data.sentJson), null, 2);
         });
     };
 
     $scope.enqueue = function () {
-        sendOrEnqueue("GetMessage", function (data) {
+        sendSingleOrEnqueue("GetMessage", function (data) {
             $scope.queuedMessages.push(data.message);
             $scope.result.json = JSON.stringify(data.message, null, 2);
         });
     };
 
-    function sendOrEnqueue(actionType, successFn) {
+    function sendSingleOrEnqueue(actionType, successFn) {
         var actionData = messageActionGrid[$scope.activeMessageType];
         var model = actionData.getModelFn();
         model.actionType = actionType;
@@ -82,16 +82,37 @@ indexApp.controller("IndexCtrl", ["$scope", "$http", "$interval", "$window", "lo
     };
 
     $scope.sendBatchMessage = function () {
+        var actionType = "SendBatchMessage";
+
         var model = buildModel();
         delete model.token;
         delete model.distinctId;
         delete model.superProperties;
-        model.actionType = "SendBatchMessage";
+        model.actionType = actionType;
         model.messages = $scope.queuedMessages;
 
         $http
             .post("/send", $window.angular.toJson(model), true)
             .success(function (data) {
+                $scope.resultType = actionType;
+                $scope.result = data;
+
+                var sentBatches = $scope.result.sentBatches;
+                if (sentBatches) {
+                    for (var i = 0; i < sentBatches.length; i++) {
+                        $scope.result.sentBatches[i].json =
+                            JSON.stringify(JSON.parse(sentBatches[i].json), null, 2);
+                    }
+                }
+
+                var failedBatches = $scope.result.failedBatches;
+                if (failedBatches) {
+                    for (i = 0; i < failedBatches.length; i++) {
+                        $scope.result.failedBatches[i].json =
+                            JSON.stringify(JSON.parse(failedBatches[i].json), null, 2);
+                    }
+                }
+
                 $scope.queuedMessages = [];
                 console.log(data);
             });

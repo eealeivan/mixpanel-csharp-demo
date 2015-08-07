@@ -48,9 +48,9 @@
     <Reference Include="Microsoft.Owin.Host.SystemWeb">
       <HintPath>..\packages\Microsoft.Owin.Host.SystemWeb.3.0.1\lib\net45\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
     </Reference>
-    <Reference Include="Mixpanel, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Mixpanel, Version=2.0.10.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\mixpanel-csharp.2.0.3\lib\net45\Mixpanel.dll</HintPath>
+      <HintPath>..\packages\mixpanel-csharp.2.0.10\lib\net45\Mixpanel.dll</HintPath>
     </Reference>
     <Reference Include="Nancy">
       <HintPath>..\packages\Nancy.1.2.0\lib\net40\Nancy.dll</HintPath>
@@ -105,7 +105,9 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JsonNetDictionaryConverter.cs" />
     <Compile Include="MainModule.cs" />
+    <Compile Include="MixpanelDictionaryUtils.cs" />
     <Compile Include="Models\ActionType.cs" />
     <Compile Include="Models\Alias.cs" />
     <Compile Include="Models\Config.cs" />

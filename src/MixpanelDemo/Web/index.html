@@ -190,7 +190,7 @@
                     <span ng-show="result.success" class="label label-success">SUCCESS</span>
                     <span ng-hide="result.success" class="label label-danger">ERROR</span>
                 </div>
-                <div ng-show="resultType == 'SendSingleMessage' || resultType == 'GetMessage'">
+                <div ng-if="resultType == 'SendSingleMessage' || resultType == 'GetMessage'">
                     <div ng-show="result.success">
                         <form role="form">
                             <div class="form-group">
@@ -209,7 +209,17 @@
                         </form>
                     </div>
                 </div>
-                <pre>{{queuedMessages | json}}</pre>
+                <div ng-if="resultType == 'SendBatchMessage'">
+                    <div ng-repeat="sentBatch in result.sentBatches" class="form-group">
+                        <label>JSON sent to Mixpanel</label>
+                        <div hljs source="sentBatch.json"></div>
+                    </div> 
+                    <div ng-repeat="failedBatch in result.failedBatches" class="form-group">
+                        <label>Batch NOT sent to Mixpanel</label>
+                        <div hljs source="failedBatch.json"></div>
+                        <pre>{{failedBatch.error}}</pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

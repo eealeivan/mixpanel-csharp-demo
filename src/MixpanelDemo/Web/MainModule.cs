@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -27,14 +28,26 @@ namespace Web
             Post["/people-unset", true] = async (m, ct) => await HandlePeopleUnsetAsync(this.Bind<PeopleUnset>());
             Post["/people-delete", true] = async (m, ct) => await HandlePeopleDeleteAsync(this.Bind<ModelBase>());
             Post["/people-track-charge", true] = async (m, ct) => await HandlePeopleTrackChargeAsync(this.Bind<PeopleTrackCharge>());
-            Post["/send", true] = async (m, ct) => await HandleSendAsync(this.Bind<Send>());
+            Post["/send", true] = async (m, ct) =>
+            {
+                // There is a strange behavior when all IDictinary<string, object> entries are
+                // created with camel cased key. Case is important in our case, so for now we just
+                // use JSON.NET to deserialize model.
+                Request.Body.Seek(0L, SeekOrigin.Begin);
+                using (var reader = new StreamReader(Request.Body))
+                {
+                    var model = JsonConvert.DeserializeObject<Send>(
+                        await reader.ReadToEndAsync(), new JsonNetDictionaryConverter());
+                    return await HandleSendAsync(model);
+                }
+            };
         }
 
         private async Task<object> HandleTrackAsync(Track model)
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.TrackTest(model.Event, model.DistinctId, properties),
                     (client, properties) => client.GetTrackMessage(model.Event, model.DistinctId, properties),
                     (client, properties) => client.TrackAsync(model.Event, model.DistinctId, properties));
@@ -49,7 +62,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.AliasTest(model.DistinctId, model.FromDistinctId),
                     (client, properties) => client.GetAliasMessage(model.DistinctId, model.FromDistinctId),
                     (client, properties) => client.AliasAsync(model.DistinctId, model.FromDistinctId));
@@ -64,7 +77,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleSetTest(model.DistinctId, properties),
                     (client, properties) => client.GetPeopleSetMessage(model.DistinctId, properties),
                     (client, properties) => client.PeopleSetAsync(model.DistinctId, properties));
@@ -79,7 +92,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleSetOnceTest(model.DistinctId, properties),
                     (client, properties) => client.GetPeopleSetOnceMessage(model.DistinctId, properties),
                     (client, properties) => client.PeopleSetOnceAsync(model.DistinctId, properties));
@@ -94,7 +107,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleAddTest(model.DistinctId, properties),
                     (client, properties) => client.GetPeopleAddMessage(model.DistinctId, properties),
                     (client, properties) => client.PeopleAddAsync(model.DistinctId, properties));
@@ -109,7 +122,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleAppendTest(model.DistinctId, properties),
                     (client, properties) => client.GetPeopleAppendMessage(model.DistinctId, properties),
                     (client, properties) => client.PeopleAppendAsync(model.DistinctId, properties));
@@ -124,7 +137,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleUnionTest(model.DistinctId, properties),
                     (client, properties) => client.GetPeopleUnionMessage(model.DistinctId, properties),
                     (client, properties) => client.PeopleUnionAsync(model.DistinctId, properties));
@@ -152,7 +165,7 @@ namespace Web
                         .ToList();
                 }
 
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleUnsetTest(model.DistinctId, propertyNames),
                     (client, properties) => client.GetPeopleUnsetMessage(model.DistinctId, propertyNames),
                     (client, properties) => client.PeopleUnsetAsync(model.DistinctId, propertyNames));
@@ -167,7 +180,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) => client.PeopleDeleteTest(model.DistinctId),
                     (client, properties) => client.GetPeopleDeleteMessage(model.DistinctId),
                     (client, properties) => client.PeopleDeleteAsync(model.DistinctId));
@@ -182,7 +195,7 @@ namespace Web
         {
             try
             {
-                return await new MessageHandler(model).HandleAsync(
+                return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) =>
                         client.PeopleTrackChargeTest(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
                         (client, properties) =>
@@ -204,7 +217,7 @@ namespace Web
             }
             catch (Exception e)
             {
-                return Task.FromResult(HandleException(e)).Result;
+                return HandleException(e);
             }
         }
 
@@ -230,11 +243,28 @@ namespace Web
                 _properties = GetPropertiesDictionary(model.Properties);
             }
 
-            public async Task<object> HandleAsync(
+            public async Task<object> HandleSendSingleOrGetAsync(
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
                 Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessage> getMessageFn,
                 Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn
                 )
+            {
+                switch (_model.ActionType)
+                {
+                    case ActionType.SendSingleMessage:
+                        return await HandleSendSingleAsync(testFn, sendAsyncFn);
+
+                    case ActionType.GetMessage:
+                        return await HandleGetMessageAsync(testFn, getMessageFn);
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            public async Task<object> HandleSendSingleAsync(
+                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn, 
+                Func<IMixpanelClient, IDictionary<string, object>, Task<bool>> sendAsyncFn)
             {
                 var testMessage = testFn(_client, _properties);
                 if (testMessage.Exception != null)
@@ -247,49 +277,118 @@ namespace Web
                         });
                 }
 
-                switch (_model.ActionType)
+                bool success = await sendAsyncFn(_client, _properties);
+                if (!success)
                 {
-                    case ActionType.SendSingleMessage:
-                        bool success = await sendAsyncFn(_client, _properties);
-                        return new
+                    return await Task.FromResult(
+                        new
                         {
-                            Success = success,
-                            SentJson = testMessage.Json
-                        };
-                    case ActionType.GetMessage:
-                        MixpanelMessage message = getMessageFn(_client, _properties);
-                        return await Task.FromResult(
-                            new
-                            {
-                                Success = true,
-                                Message = message
-                            });
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                            Success = false,
+                            Error = "An error occurs while sending a message."
+                        });
                 }
+
+                return await Task.FromResult(
+                        new
+                        {
+                            Success = true,
+                            SentJson = testMessage.Json
+                        });
+            }
+
+            public async Task<object> HandleGetMessageAsync(
+                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessageTest> testFn,
+                Func<IMixpanelClient, IDictionary<string, object>, MixpanelMessage> getMessageFn)
+            {
+                var testMessage = testFn(_client, _properties);
+                if (testMessage.Exception != null)
+                {
+                    return await Task.FromResult(
+                        new
+                        {
+                            Success = false,
+                            Error = testMessage.Exception.Message
+                        });
+                }
+
+                MixpanelMessage message = getMessageFn(_client, _properties);
+                if (message != null)
+                {
+                    return await Task.FromResult(
+                        new
+                        {
+                            Success = true,
+                            Message = message
+                        });
+                }
+                return await Task.FromResult(
+                    new
+                    {
+                        Success = false,
+                        Error = "An error occurs while generating the message."
+                    });
             }
 
             public async Task<object> HandleSendBatchAsync()
             {
-                var messages = ((Send) _model).Messages;
+                IList<MixpanelMessage> messages = ((Send)_model).Messages;
 
-                var testBachMessages = _client.SendTest(messages);
-                var result = await _client.SendAsync(messages);
+                IReadOnlyCollection<MixpanelBatchMessageTest> testBatchMessages = 
+                    _client.SendTest(messages);
+                var sendResult = await _client.SendAsync(messages);
+
+                var sentTestBatchMessages = new List<MixpanelBatchMessageTest>();
+                if (sendResult.SentBatches != null)
+                {
+                    foreach (var sentBatch in sendResult.SentBatches)
+                    {
+                        var sentTestBatchMessage = testBatchMessages
+                            .Single(testBatchMessage => MixpanelDictionaryUtils.DictionaryCollectionsEqual(
+                                sentBatch.Select(x => x.Data).ToList(),
+                                testBatchMessage.Data));
+
+                        sentTestBatchMessages.Add(sentTestBatchMessage);
+                    }
+                }
+
+                var failedTestBatchMessages = new List<MixpanelBatchMessageTest>();
+                if (sendResult.FailedBatches != null)
+                {
+                    foreach (var sentBatch in sendResult.FailedBatches)
+                    {
+                        var sentTestBatchMessage = testBatchMessages
+                            .Single(testBatchMessage => MixpanelDictionaryUtils.DictionaryCollectionsEqual(
+                                sentBatch.Select(x => x.Data).ToList(),
+                                testBatchMessage.Data));
+
+                        failedTestBatchMessages.Add(sentTestBatchMessage);
+                    }
+                }
+
                 return new
                 {
-                    result.Success,
-                    SentJsons = testBachMessages
-                        .Select(testBatchMessage => new
+                    sendResult.Success,
+                    SentBatches = sentTestBatchMessages
+                        .Select(sentTestBatchMessage => new
                         {
-                            SentJson = testBatchMessage.Exception == null 
-                                ? testBatchMessage.Json
-                                : null,
-                            Error = testBatchMessage.Exception != null 
-                                ? testBatchMessage.Exception.Message 
-                                : null
+                            sentTestBatchMessage.Json
+                        }),
+                    FailedBatches = failedTestBatchMessages
+                        .Select(failedTestBatchMessage =>
+                        {
+                            var json = failedTestBatchMessage.Json ??
+                                       JsonConvert.SerializeObject(failedTestBatchMessage.Data);
+                            return new
+                            {
+                                Json = json,
+                                Error = failedTestBatchMessage.Exception != null
+                                    ? failedTestBatchMessage.Exception.Message
+                                    : "An error occurs while sending the batch message."
+                            };
                         })
                 };
             }
+
 
             private IMixpanelClient GetMixpanelClient(ModelBase model)
             {
