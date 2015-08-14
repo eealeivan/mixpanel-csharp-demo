@@ -9,12 +9,15 @@ using Mixpanel;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
+using NLog;
 using Web.Models;
 
 namespace Web
 {
     public class MainModule : NancyModule
     {
+        private static readonly Logger MixpanelLogger = LogManager.GetLogger("Mixpanel");
+
         public MainModule()
         {
             Get["/"] = _ => View["index.html"];
@@ -393,6 +396,8 @@ namespace Web
             private IMixpanelClient GetMixpanelClient(ModelBase model)
             {
                 var config = new MixpanelConfig();
+                config.ErrorLogFn = (message, exception) => MixpanelLogger.Error(exception, message);
+
                 if (model.Config.UseJsonNet)
                 {
                     config.SerializeJsonFn = JsonConvert.SerializeObject;
