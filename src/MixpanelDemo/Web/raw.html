@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Send raw JSON to Mixpanel</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/content/github.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container" ng-app="rawApp" ng-controller="RawCtrl">
+        <div class="page-header">
+            <h1>Send raw JSON to Mixpanel</h1>
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <h3>JSON</h3>
+                <label class="radio-inline">
+                    <input type="radio" ng-model="message.type" value="track">Track
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" ng-model="message.type" value="engage">Engage
+                </label>
+                <textarea ng-model="message.json" style="width: 100%; height: 300px;"></textarea>
+                <label>Query string</label>
+                <input type="text" ng-model="message.queryString" style="width: 150px;"/>
+                <div style="text-align: right;">
+                    <button ng-click="sendRawMessage()" class="btn btn-success">Send</button>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <h3>Result</h3>
+                <div ng-hide="!result" style="margin-bottom: 15px;">
+                    <span ng-show="result.success" class="label label-success">SUCCESS</span>
+                    <span ng-hide="result.success" class="label label-danger">ERROR</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="/content/ui-bootstrap-tpls-0.13.0.min.js"></script>
+    <script src="/content/highlight.pack.js"></script>
+    <script src="/content/angular-highlightjs.min.js"></script>
+    <script src="/content/raw.js"></script>
+</body>
+</html>

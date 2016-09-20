@@ -3,10 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Mixpanel;
 using Nancy;
+using Nancy.Extensions;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using NLog;
@@ -44,6 +47,8 @@ namespace Web
                     return await HandleSendAsync(model);
                 }
             };
+            Get["/raw"] = _ => View["raw.html"];
+            Post["/send-raw", true] = async (m, ct) => await HandleSendRawAsync(this.Bind<RawMessage>());
         }
 
         private async Task<object> HandleTrackAsync(Track model)
@@ -201,7 +206,7 @@ namespace Web
                 return await new MessageHandler(model).HandleSendSingleOrGetAsync(
                     (client, properties) =>
                         client.PeopleTrackChargeTest(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
-                        (client, properties) =>
+                    (client, properties) =>
                         client.GetPeopleTrackChargeMessage(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow),
                     (client, properties) =>
                         client.PeopleTrackChargeAsync(model.DistinctId, model.Amount, model.Time ?? DateTime.UtcNow));
@@ -222,6 +227,58 @@ namespace Web
             {
                 return HandleException(e);
             }
+        }
+
+        private async Task<object> HandleSendRawAsync(RawMessage rawMessage)
+        {
+            string url = "http://api.mixpanel.com/" + rawMessage.Type;
+            if (!string.IsNullOrWhiteSpace(rawMessage.QueryString))
+            {
+                url += "?" + rawMessage.QueryString;
+            }
+
+            string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(rawMessage.Json));
+            string requestBody = "data=" + base64;
+
+            string mixpanelResponse = null;
+
+            try
+            {
+                var req = (HttpWebRequest)WebRequest.CreateDefault(new Uri(url));
+                req.Method = "POST";
+                req.ContentType = "application/x-www-form-urlencoded";
+                req.Accept = "*/*";
+                req.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate");
+                req.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+                using (var reqStream = await req.GetRequestStreamAsync())
+                {
+                    using (var writer = new StreamWriter(reqStream))
+                    {
+                        writer.Write(requestBody);
+                    }
+                }
+
+                using (var res = await req.GetResponseAsync())
+                {
+                    using (var resStream = res.GetResponseStream())
+                    {
+                        using (var reader = new StreamReader(resStream))
+                        {
+                            mixpanelResponse = await reader.ReadToEndAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+            }
+
+            return await Task.FromResult(
+                new
+                {
+                    Success = mixpanelResponse == "1"
+                });
         }
 
         private object HandleException(Exception e)
