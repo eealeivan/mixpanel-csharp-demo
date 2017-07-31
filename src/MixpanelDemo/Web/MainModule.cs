@@ -3,13 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Mixpanel;
 using Nancy;
-using Nancy.Extensions;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using NLog;
@@ -231,53 +228,25 @@ namespace Web
 
         private async Task<object> HandleSendRawAsync(RawMessage rawMessage)
         {
-            string url = "http://api.mixpanel.com/" + rawMessage.Type;
-            if (!string.IsNullOrWhiteSpace(rawMessage.QueryString))
+            MixpanelMessageEndpoint endpoint;
+            switch (rawMessage.Type)
             {
-                url += "?" + rawMessage.QueryString;
+                case "track":
+                    endpoint = MixpanelMessageEndpoint.Track;
+                    break;
+                case "engage":
+                    endpoint = MixpanelMessageEndpoint.Engage;
+                    break;
+                default:
+                    throw new InvalidOperationException();
             }
 
-            string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(rawMessage.Json));
-            string requestBody = "data=" + base64;
-
-            string mixpanelResponse = null;
-
-            try
-            {
-                var req = (HttpWebRequest)WebRequest.CreateDefault(new Uri(url));
-                req.Method = "POST";
-                req.ContentType = "application/x-www-form-urlencoded";
-                req.Accept = "*/*";
-                req.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate");
-                req.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-                using (var reqStream = await req.GetRequestStreamAsync())
-                {
-                    using (var writer = new StreamWriter(reqStream))
-                    {
-                        writer.Write(requestBody);
-                    }
-                }
-
-                using (var res = await req.GetResponseAsync())
-                {
-                    using (var resStream = res.GetResponseStream())
-                    {
-                        using (var reader = new StreamReader(resStream))
-                        {
-                            mixpanelResponse = await reader.ReadToEndAsync();
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-            }
+            var mixpanelClient = new MixpanelClient();
 
             return await Task.FromResult(
                 new
                 {
-                    Success = mixpanelResponse == "1"
+                    Success = mixpanelClient.SendJson(endpoint, rawMessage.Json)
                 });
         }
 
